@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Blog App</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%;background:#3a3a3a;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial}
+    .app{min-height:100vh;display:flex;flex-direction:column}
+
+    header{
+      background:#0b0b0b;
+      color:#fff;
+      padding:12px 14px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      position:relative;
+      border-bottom:3px solid rgba(255,255,255,0.04)
+    }
+    .brand img{display:block;height:40px;object-fit:contain}
+    .search-wrap{flex:1;display:flex;align-items:center}
+    .search{width:100%;background:#3a3a3a;color:#fff;border-radius:24px;padding:10px 16px;font-size:16px;border:2px solid rgba(255,255,255,0.06);outline:none}
+    .search::placeholder{color:rgba(255,255,255,0.6)}
+    .actions{display:flex;gap:8px;margin-left:8px}
+    .btn{padding:8px 12px;border-radius:20px;border:2px solid rgba(255,255,255,0.18);background:transparent;color:#fff;font-weight:600;font-size:14px;cursor:pointer}
+    .btn:active{transform:translateY(1px)}
+
+    main{flex:1;background:#3a3a3a;padding:10px;overflow-y:auto;position:relative}
+
+    .menu-panel{position:absolute;left:0;right:0;top:100%;background:linear-gradient(#060606,#050505);box-shadow:0 6px 30px rgba(0,0,0,0.6);overflow-y:auto;max-height:0;transition:max-height .3s;z-index:40;}
+    .menu-panel.open{max-height:70vh;border-bottom-left-radius:12px;border-bottom-right-radius:12px;}
+    .menu-list{list-style:none}
+    .menu-item{padding:18px;border-bottom:1px solid rgba(255,255,255,0.05);color:#fff;font-size:20px;cursor:pointer}
+    .menu-item:hover{background:#111}
+
+    .post-card{background:#111;color:#fff;border-radius:14px;overflow:hidden;margin:12px 0;box-shadow:0 4px 12px rgba(0,0,0,0.4);cursor:pointer}
+    .post-card img{width:100%;filter:blur(8px);opacity:.6;transition:filter .6s ease,opacity .6s ease}
+    .post-card img.loaded{filter:blur(0);opacity:1}
+    .post-content{padding:10px 12px}
+    .post-content h3{font-size:18px;margin:6px 0;color:#fff;font-weight:700}
+    .post-content small{display:block;margin-bottom:6px;color:#aaa;font-size:12px}
+    .post-content p{color:#ddd;line-height:1.5;font-size:15px}
+
+    .post-view{background:#111;color:#fff;border-radius:12px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,0.4);animation:fadeIn .24s ease}
+    .img-wrap{position:relative;display:block}
+    .post-view img{width:100%;border-radius:10px;margin:10px 0;filter:blur(8px);opacity:.6;transition:filter .5s ease,opacity .5s ease;display:block;cursor:pointer}
+    .post-view img.loaded{filter:blur(0);opacity:1}
+
+    .back-btn{
+      position:sticky;
+      top:10px;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      background:rgba(0,0,0,0.55);
+      color:#fff;
+      border:2px solid rgba(255,255,255,0.1);
+      padding:8px 14px;
+      border-radius:12px;
+      font-size:16px;
+      cursor:pointer;
+      backdrop-filter:blur(6px);
+      transition:background .3s ease,transform .2s ease;
+      z-index:50;
+    }
+    .back-btn:hover{background:rgba(255,255,255,0.1);transform:scale(1.05)}
+
+    .ext-link-icon{
+      position:absolute;
+      top:10px;
+      right:10px;
+      background:rgba(0,0,0,0.6);
+      color:#fff;
+      padding:6px 8px;
+      border-radius:8px;
+      font-size:12px;
+      display:flex;
+      align-items:center;
+      gap:4px;
+      backdrop-filter:blur(4px);
+      z-index:5;
+    }
+    .ext-link-icon svg{width:14px;height:14px}
+
+    .lb-overlay{position:fixed;inset:0;background:rgba(10,10,10,0.85);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;z-index:100}
+    .lb-inner{position:relative;max-width:96vw;max-height:96vh;display:flex;align-items:center;justify-content:center}
+    .lb-img{max-width:100%;max-height:100%;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,0.6)}
+    .lb-close{position:absolute;top:10px;right:10px;background:rgba(0,0,0,0.5);border:none;color:#fff;font-size:20px;padding:6px 10px;border-radius:6px;cursor:pointer}
+    .lb-nav{position:absolute;left:0;right:0;top:50%;display:flex;justify-content:space-between;pointer-events:none}
+    .lb-btn{pointer-events:auto;background:rgba(0,0,0,0.4);border:none;color:#fff;font-size:24px;padding:8px 14px;border-radius:8px;cursor:pointer}
+
+    .loader{padding:12px;color:#ccc;text-align:center}
+    .end-msg{padding:12px;color:#ccc;text-align:center}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  </style>
+</head>
+<body>
+  <header class="topbar"> <div class="brand"> <strong>CAMBIAR_NOMBRE</strong> </div>
+      <div class="search-wrap"><input id="searchInput" class="search" type="search" placeholder="Buscar..."></div>
+      <div class="actions"><button class="btn" id="menuBtn">Menu</button><button class="btn" id="homeBtn">Inicio</button></div>
+      <nav id="menuPanel" class="menu-panel"><ul class="menu-list">
+        <li class="menu-item" data-tag="">Todos</li>
+            <li class="menu-item" data-tag="Android">Android</li>
+                <li class="menu-item" data-tag="Windows">Windows</li>
+                    <li class="menu-item" data-tag="games">Juegos</li>
+                        <li class="menu-item" data-tag="Minecraft">Minecraft</li>
+      </ul></nav>
+    </header>
+
+    <main id="mainArea">
+      <div id="feed"></div>
+      <div id="loader" class="loader">Cargando...</div>
+      <div id="endMsg" class="end-msg" style="display:none">No hay más entradas que mostrar.</div>
+    </main>
+  </div>
+
+  <div id="lightbox" class="lb-overlay">
+    <div class="lb-inner">
+      <button id="lbClose" class="lb-close">✕</button>
+      <div class="lb-nav">
+        <button id="lbPrev" class="lb-btn">◀</button>
+        <button id="lbNext" class="lb-btn">▶</button>
+      </div>
+      <img id="lbImage" class="lb-img" src="" alt="">
+    </div>
+  </div>
+
+  <script>
+  (()=>{const blogBase='COLOCAR_URL_AQUI';
+  const feedEl=document.getElementById('feed'),loader=document.getElementById('loader'),endMsg=document.getElementById('endMsg');
+  const search=document.getElementById('searchInput'),menuBtn=document.getElementById('menuBtn'),menu=document.getElementById('menuPanel'),home=document.getElementById('homeBtn');
+  const lb=document.getElementById('lightbox'),lbImg=document.getElementById('lbImage'),lbPrev=document.getElementById('lbPrev'),lbNext=document.getElementById('lbNext'),lbClose=document.getElementById('lbClose');
+  let lbImages=[],lbIndex=0,entries=[],start=1,size=15,loading=false,more=true,tag=null,q=null,inPost=false,scrollY=0;
+
+  menuBtn.onclick=()=>menu.classList.toggle('open');
+  document.querySelectorAll('.menu-item').forEach(i=>i.onclick=()=>{setTag(i.dataset.tag||null);menu.classList.remove('open')});
+  home.onclick=()=>setTag(null);
+
+  function jsonp(u,cb){const n='cb_'+Math.random().toString(36).slice(2);window[n]=d=>{cb(null,d);delete window[n];s.remove()};const s=document.createElement('script');s.src=u+(u.includes('?')?'&':'?')+'alt=json-in-script&callback='+n;s.onerror=()=>{cb(new Error('error'));delete window[n];s.remove()};document.body.appendChild(s)}
+
+  // ✅ Mejora real de calidad de imagen Blogger (forza s600)
+  function optimize(u) {
+    if (!u) return '';
+    let clean = u.replace('http://', 'https://');
+    clean = clean.replace(/(\/s\d+(-[wh]\d+)?(-c)?)/, '/s200');
+    return clean;
+  }
+  function toWebp(u) {
+    return u ? u.replace(/\.(jpg|png)/i, '.webp') : '';
+  }
+  function progressive(img, url) {
+    const low = optimize(url).replace('/s200', '/s100');
+    const high = toWebp(optimize(url));
+    img.src = low;
+    const hi = new Image();
+    hi.onload = () => {
+      img.src = hi.src;
+      img.classList.add('loaded');
+    };
+    hi.src = high;
+  }
+
+  const card=p=>{const t=p.title.$t,f=new Date(p.published.$t).toLocaleDateString(),s=p.summary?p.summary.$t:p.content.$t.slice(0,150),img=p.media$thumbnail?optimize(p.media$thumbnail.url):'';const c=document.createElement('div');c.className='post-card';if(img){const im=document.createElement('img');progressive(im,img);c.appendChild(im)};const ct=document.createElement('div');ct.className='post-content';ct.innerHTML=`<h3>${t}</h3><small>${f}</small><p>${s}</p>`;c.appendChild(ct);c.onclick=()=>show(p);return c};
+  const append=p=>{const f=document.createDocumentFragment();p.forEach(x=>f.appendChild(card(x)));feedEl.appendChild(f)};
+
+  function show(p){scrollY=window.scrollY;inPost=true;feedEl.innerHTML='';const w=document.createElement('div');w.className='post-view';
+  const b=document.createElement('button');b.className='back-btn';
+  b.innerHTML=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>Volver`;
+  b.onclick=()=>{inPost=false;feedEl.innerHTML='';append(entries);setTimeout(()=>window.scrollTo({top:scrollY,behavior:'instant'}),10)};
+  w.appendChild(b);
+  const body=document.createElement('div');body.innerHTML=p.content.$t;w.appendChild(body);feedEl.appendChild(w);
+  const imgs=[...body.querySelectorAll('img')];lbImages=[];
+  imgs.forEach(img=>{progressive(img,img.src);const wr=document.createElement('div');wr.className='img-wrap';img.parentNode.replaceChild(wr,img);wr.appendChild(img);
+  const a=img.closest('a'),href=a?a.href:null,isExt=href&&!href.includes('blogger.googleusercontent.com');
+  if(isExt){const icon=document.createElement('span');icon.className='ext-link-icon';icon.innerHTML='<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 3h7v7M10 14L21 3M21 21H3V3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>Enlace';wr.appendChild(icon);wr.onclick=e=>{e.stopPropagation();window.open(href,'_blank')};icon.onclick=e=>{e.stopPropagation();window.open(href,'_blank')};if(a)a.onclick=e=>{e.preventDefault();window.open(href,'_blank')}}
+  else if(img.src.includes('blogger.googleusercontent.com')){if(a)a.onclick=e=>e.preventDefault();const i=lbImages.length;lbImages.push(img.src);wr.onclick=e=>{e.preventDefault();openLb(i)}}});}
+
+  function openLb(i){if(!lbImages.length)return;lbIndex=i;lb.style.display='flex';lbImg.src=lbImages[i]}
+  function closeLb(){lb.style.display='none'}
+  lbClose.onclick=closeLb;lbPrev.onclick=()=>{lbIndex=(lbIndex-1+lbImages.length)%lbImages.length;lbImg.src=lbImages[lbIndex]};
+  lbNext.onclick=()=>{lbIndex=(lbIndex+1)%lbImages.length;lbImg.src=lbImages[lbIndex]};
+  let sx=null;lb.addEventListener('touchstart',e=>sx=e.touches[0].clientX);lb.addEventListener('touchend',e=>{if(sx===null)return;let dx=e.changedTouches[0].clientX-sx;if(dx>50)lbPrev.click();else if(dx<-50)lbNext.click();sx=null});
+
+  function load(){if(loading||!more||inPost)return;loading=true;loader.style.display='block';
+    let u=blogBase+'/feeds/posts/default?alt=json-in-script&start-index='+start+'&max-results='+size;
+    if(tag)u=blogBase+'/feeds/posts/default/-/'+encodeURIComponent(tag)+'?start-index='+start+'&max-results='+size;
+    if(q)u=blogBase+'/feeds/posts/default?q='+encodeURIComponent(q)+'&start-index='+start+'&max-results='+size;
+    jsonp(u,(e,d)=>{loading=false;loader.style.display='none';if(e)return;const ps=d.feed.entry||[];if(!ps.length){more=false;endMsg.style.display='block';return;}ps.forEach(x=>entries.push(x));append(ps);start+=ps.length;})}
+  function setTag(t){tag=t;entries=[];start=1;more=true;feedEl.innerHTML='';endMsg.style.display='none';load()}
+  search.oninput=()=>{clearTimeout(search._t);search._t=setTimeout(()=>{q=search.value.trim()||null;entries=[];start=1;more=true;feedEl.innerHTML='';endMsg.style.display='none';load()},500)}
+  window.addEventListener('scroll',()=>{if(window.innerHeight+window.scrollY>=document.body.offsetHeight-300)load()});
+  load();
+  })();
+  </script>
+</body>
+</html>
